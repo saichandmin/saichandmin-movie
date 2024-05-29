@@ -1,147 +1,186 @@
-const express = require('express')
-const path = require('path')
-const {open} = require('sqlite')
-const sqlite3 = require('sqlite3')
-const app = express()
-app.use(express.json())
+# Movies
 
-const dbPath = path.join(__dirname, 'moviesData.db')
-let db = null
+Given two files `app.js` and a database file `moviesData.db` consisting of two tables `movie` and `director`.
 
-const convertDbObjectToResponseObjectMovie = dbObject => {
-  return {
-    movieId: dbObject.movie_id,
-    directorId: dbObject.director_id,
-    movieName: dbObject.movie_name,
-    leadActor: dbObject.lead_actor,
-  }
+Write APIs to perform CRUD operations on the tables `movie`, `director` containing the following columns,
+
+**Movie Table**
+
+| Columns     | Type    |
+| ----------- | ------- |
+| movie_id    | INTEGER |
+| director_id | INTEGER |
+| movie_name  | TEXT    |
+| lead_actor  | TEXT    |
+
+**Director Table**
+
+| Columns       | Type    |
+| ------------- | ------- |
+| director_id   | INTEGER |
+| director_name | TEXT    |
+
+### API 1
+
+#### Path: `/movies/`
+
+#### Method: `GET`
+
+#### Description:
+
+Returns a list of all movie names in the movie table
+
+#### Response
+
+```
+[
+  {
+    movieName: "Captain America: The First Avenger",
+  },
+
+  ...
+]
+```
+
+### API 2
+
+#### Path: `/movies/`
+
+#### Method: `POST`
+
+#### Description:
+
+Creates a new movie in the movie table. `movie_id` is auto-incremented
+
+#### Request
+
+```
+{
+  "directorId": 6,
+  "movieName": "Jurassic Park",
+  "leadActor": "Jeff Goldblum"
 }
+```
 
-const intilizeDatabaseAndServer = async () => {
-  try {
-    db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database,
-    })
-    app.listen(3000, () => {
-      console.log('Server Running at http://localhost:3000/')
-    })
-  } catch (e) {
-    console.log(`Db Error ${e.message}`)
-    process.exit(1)
-  }
+#### Response
+
+```
+Movie Successfully Added
+```
+
+### API 3
+
+#### Path: `/movies/:movieId/`
+
+#### Method: `GET`
+
+#### Description:
+
+Returns a movie based on the movie ID
+
+#### Response
+
+```
+{
+  movieId: 12,
+  directorId: 3,
+  movieName: "The Lord of the Rings",
+  leadActor: "Elijah Wood",
 }
+```
 
-intilizeDatabaseAndServer()
+### API 4
 
-app.get('/movies/', async (request, response) => {
-  const {page = 1, limit = 10} = request.query
-  const getMoviesQuery = `
-    SELECT
-      *
-    FROM
-      movie
-    LIMIT ${limit} OFFSET ${(page - 1) * limit};
-  `
+#### Path: `/movies/:movieId/`
 
-  const movies = await db.all(getMoviesQuery)
+#### Method: `PUT`
 
-  if (movies.length === 0) {
-    response.status(404).send('No movies found')
-  } else {
-    response.send(movies)
-  }
-})
+#### Description:
 
-app.get('/movies/:movieId/', async (request, response) => {
-  const {movieId} = request.params
-  const getMovieQuerry = `
-      SELECT
-      *
-      FROM
-      movie
-      WHERE
-      movie_id=${movieId};`
-  const movie = await db.get(getMovieQuerry)
-  if (!movie) {
-    response.status(404).send('Movie not found')
-  } else {
-    response.send(convertDbObjectToResponseObjectMovie(movie))
-  }
-})
+Updates the details of a movie in the movie table based on the movie ID
 
-app.post('/movies/', async (request, response) => {
-  const movieDetails = request.body
-  const {directorId, movieName, leadActor} = movieDetails
-  const addMovieQuerry = `
-INSERT INTO
-movie (director_id,movie_name,lead_actor)
-Values(${directorId},'${movieName}','${leadActor}')
-`
-  await db.run(addMovieQuerry)
-  response.send('Movie Successfully Added')
-})
+#### Request
 
-app.put('/movies/:movieId/', async (request, response) => {
-  const {movieId} = request.params
-  const movieDetails = request.body
-  const {directorId, movieName, leadActor} = movieDetails
-  const updateMovieQuerry = `
-UPDATE
-movie
-SET
-director_id=${directorId},movie_name='${movieName}',lead_actor='${leadActor}'
-WHERE
-movie_id=${movieId};
-`
-  await db.run(updateMovieQuerry)
-  response.send('Movie Details Updated')
-})
-
-app.delete('/movies/:movieId/', async (request, response) => {
-  const {movieId} = request.params
-  const deleteMovieQuerry = `
-DELETE 
-FROM
-movie
-WHERE
-movie_id=${movieId};`
-  await db.run(deleteMovieQuerry)
-  response.send('Movie Removed')
-})
-
-const convertDirectorDetailsPascalCase = dbObject => {
-  return {
-    directorId: dbObject.director_id,
-    directorName: dbObject.director_name,
-  }
+```
+{
+  "directorId": 24,
+  "movieName": "Thor",
+  "leadActor": "Christopher Hemsworth"
 }
+```
 
-app.get('/directors/', async (request, response) => {
-  const getAllDirectorQuerry = `
-    SELECT
-      *
-    FROM
-      director;`
-  const directorsArray = await db.all(getAllDirectorQuerry)
-  response.send(directorsArray)
-})
+#### Response
 
-app.get('/directors/:directorId/movies/', async (request, response) => {
-  const {directorId} = request.params
-  const getAllDirectorQuerry = `
-    SELECT
-      movie_name
-    FROM
-      director INNER JOIN movie
-    ON director.director_id=movie.director_id
-    WHERE
-      director.director_id=${directorId};`
-  const movies = await db.all(getAllDirectorQuerry)
-  response.send({
-    message: 'Movies directed by the director retrieved successfully',
-    data: movies,
-  })
-})
+```
+Movie Details Updated
 
-module.exports = app
+```
+
+### API 5
+
+#### Path: `/movies/:movieId/`
+
+#### Method: `DELETE`
+
+#### Description:
+
+Deletes a movie from the movie table based on the movie ID
+
+#### Response
+
+```
+Movie Removed
+```
+
+### API 6
+
+#### Path: `/directors/`
+
+#### Method: `GET`
+
+#### Description:
+
+Returns a list of all directors in the director table
+
+#### Response
+
+```
+[
+  {
+    directorId: 1,
+    directorName: "Joe Johnston",
+  },
+
+  ...
+]
+```
+
+### API 7
+
+#### Path: `/directors/:directorId/movies/`
+
+#### Method: `GET`
+
+#### Description:
+
+Returns a list of all movie names directed by a specific director
+
+#### Response
+
+```
+[
+  {
+    movieName: "Captain Marvel",
+  },
+
+  ...
+]
+```
+
+<br/>
+
+Use `npm install` to install the packages.
+
+**Export the express instance using the default export syntax.**
+
+**Use Common JS module syntax.**
