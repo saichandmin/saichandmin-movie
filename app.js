@@ -17,6 +17,17 @@ const convertDbObjectToResponseObjectMovie = dbObject => {
   }
 }
 
+const convertDirectorDetailsCamelCase = dbObject => {
+  const directorDetails = {
+    directorId: dbObject.director_id,
+    directorName: dbObject.director_name,
+  }
+
+  return _.mapKeys({...dbObject, ...directorDetails}, (value, key) =>
+    _.camelCase(key),
+  )
+}
+
 const intilizeDatabaseAndServer = async () => {
   try {
     db = await open({
@@ -111,13 +122,6 @@ movie_id=${movieId};`
   response.send('Movie Removed')
 })
 
-const convertDirectorDetailsPascalCase = dbObject => {
-  return {
-    directorId: dbObject.director_id,
-    directorName: dbObject.director_name,
-  }
-}
-
 app.get('/directors/', async (request, response) => {
   const getAllDirectorQuerry = `
     SELECT
@@ -125,7 +129,7 @@ app.get('/directors/', async (request, response) => {
     FROM
       director;`
   const directorsArray = await db.all(getAllDirectorQuerry)
-  response.send(directorsArray)
+  response.send(directorsArray.map(convertDirectorDetailsCamelCase))
 })
 
 app.get('/directors/:directorId/movies/', async (request, response) => {
