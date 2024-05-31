@@ -61,7 +61,7 @@ app.get('/movies/', async (request, response) => {
   if (movies.length === 0) {
     response.status(404).send('No movies found')
   } else {
-    response.send(movies)
+    response.send(movieName)
   }
 })
 
@@ -150,4 +150,5 @@ app.get('/directors/:directorId/movies/', async (request, response) => {
 })
 
 module.exports = app
+
 
