@@ -50,7 +50,7 @@ app.get('/movies/', async (request, response) => {
 
   const getMoviesQuery = `
     SELECT
-      *
+      movie_name
     FROM
       movie
     LIMIT ${limit} OFFSET ${(page - 1) * limit};
@@ -61,10 +61,10 @@ app.get('/movies/', async (request, response) => {
   if (movies.length === 0) {
     response.status(404).send('No movies found')
   } else {
-    response.send(movieName)
+    const movieList = movies.map(movie => ({movieName: movie.movie_name}))
+    response.send(movieList)
   }
 })
-
 app.get('/movies/:movieId/', async (request, response) => {
   const {movieId} = request.params
   const getMovieQuerry = `
